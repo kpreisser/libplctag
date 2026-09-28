@@ -1280,7 +1280,8 @@ int socket_connect_tcp_start(sock_p s, const char *host, int port) {
     pdebug(DEBUG_MODULE_PLATFORM, DEBUG_SPEW, 0, "Starting.");
 
     /* Open a socket for communication with the gateway. */
-    fd = socket(AF_INET, SOCK_STREAM, 0 /*IPPROTO_TCP*/);
+    fd = WSASocketW(AF_INET, SOCK_STREAM, 0 /*IPPROTO_TCP*/, NULL, 0,
+                WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT);
 
     /* check for errors */
     if(fd == INVALID_SOCKET) {
@@ -2160,7 +2161,8 @@ static int sock_create_event_wakeup_channel(sock_p sock) {
          * Set up our listening socket.
          */
 
-        listener = (SOCKET)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        listener = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0,
+                      WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT);
         if(listener == INVALID_SOCKET) {
             pdebug(DEBUG_MODULE_PLATFORM, DEBUG_WARN, 0, "Error %d creating the listener socket!", WSAGetLastError());
             rc = PLCTAG_ERR_WINSOCK;
@@ -2209,8 +2211,9 @@ static int sock_create_event_wakeup_channel(sock_p sock) {
          * Set up our wake read side socket.
          */
 
-        wake_fds[0] = (SOCKET)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if(wake_fds[0] <= 0) {
+        wake_fds[0] = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0,
+                         WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT);
+        if(wake_fds[0] == INVALID_SOCKET) {
             pdebug(DEBUG_MODULE_PLATFORM, DEBUG_WARN, 0, "Error %d creating the wake channel read side socket!",
                    WSAGetLastError());
             rc = PLCTAG_ERR_WINSOCK;

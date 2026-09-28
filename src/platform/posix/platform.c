@@ -1241,7 +1241,12 @@ int socket_connect_tcp_start(sock_p s, const char *host, int port) {
     pdebug(DEBUG_MODULE_PLATFORM, DEBUG_DETAIL, 0, "Starting.");
 
     /* Open a socket for communication with the gateway. */
+#ifdef SOCK_CLOEXEC
+    fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+#else
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if(fd >= 0) { (void)fcntl(fd, F_SETFD, FD_CLOEXEC); }
+#endif
 
     pdebug(DEBUG_MODULE_PLATFORM, DEBUG_INFO, 0, "socket() created fd=%d", fd);
 
@@ -2181,7 +2186,16 @@ int sock_create_event_wakeup_channel(sock_p sock) {
     do {
         /* open the pipe for waking the select wait. */
         // if(pipe(wake_fds)) {
-        if((rc = socketpair(PF_LOCAL, SOCK_STREAM, 0, wake_fds))) {
+#ifdef SOCK_CLOEXEC
+        rc = socketpair(PF_LOCAL, SOCK_STREAM | SOCK_CLOEXEC, 0, wake_fds);
+#else
+        rc = socketpair(PF_LOCAL, SOCK_STREAM, 0, wake_fds);
+        if(!rc) {
+            (void)fcntl(wake_fds[0], F_SETFD, FD_CLOEXEC);
+            (void)fcntl(wake_fds[1], F_SETFD, FD_CLOEXEC);
+        }
+#endif
+        if(rc) {
             pdebug(DEBUG_MODULE_PLATFORM, DEBUG_WARN, 0, "Unable to open waker pipe!");
             switch(errno) {
                 case EAFNOSUPPORT:
